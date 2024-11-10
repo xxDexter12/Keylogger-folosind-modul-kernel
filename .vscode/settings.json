@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.tcc": "c",
+        "struct_keylogger.h": "c",
+        "keyboard.h": "c"
+    }
+}
