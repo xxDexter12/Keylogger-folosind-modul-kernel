@@ -1,4 +1,4 @@
-obj-m := init.o
+obj-m := init.o flush.o keyboard_callback.o keycode_to_string.o write_to_file.o
 
 # Directorul curent de lucru
 COMPILE_DIR := $(shell pwd)
