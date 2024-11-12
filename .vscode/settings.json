@@ -2,6 +2,8 @@
     "files.associations": {
         "*.tcc": "c",
         "struct_keylogger.h": "c",
-        "keyboard.h": "c"
+        "keyboard.h": "c",
+        "file.h": "c",
+        "workqueue.h": "c"
     }
 }
