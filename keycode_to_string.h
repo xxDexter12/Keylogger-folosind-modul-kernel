@@ -43,7 +43,7 @@ static const char *keymap[][2] = {
 	{"_PAUSE_", "_PAUSE_"},                                         // 119
 };
 
-size_t keycode_to_string (int keycode,int shift);
+size_t keycode_to_string(int keycode,int shift_pressed,char*buffer,size_t buff_len);
 
 #endif
 
