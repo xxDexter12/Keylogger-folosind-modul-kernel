@@ -1,29 +1,13 @@
-# Numele executabilului
-TARGET := init
+obj-m := init.o
 
-# Sursele și fișierele obiect
-SRC_FILES := $(wildcard *.c)
-OBJ_FILES := $(SRC_FILES:.c=.o)
+# Directorul curent de lucru
+COMPILE_DIR := $(shell pwd)
 
-# Compiler și flaguri
-CC := gcc
-CFLAGS := -Wall -Wextra -O2
-#ccflags-y := $(ccflags-y) -xc -E -v
+# Calea către kernel headers pentru versiunea curentă a kernelului
+KDIR := /lib/modules/$(shell uname -r)/build
 
-# Reguli
-.PHONY: all clean
+all:
+	$(MAKE) -C $(KDIR) M=$(COMPILE_DIR) modules
 
-# Regula principală de compilare
-all: $(TARGET)
-
-# Crearea executabilului
-$(TARGET): $(OBJ_FILES)
-	$(CC) $(CFLAGS) $(ccflags-y) -o $@ $^
-
-# Compilarea fișierelor sursă individuale
-%.o: %.c
-	$(CC) $(CFLAGS) $(ccflags-y) -c $< -o $@
-
-# Curățare
 clean:
-	rm -f *.o $(TARGET)
+	rm -f -v *.o *.ko *.mod. .*.cmd *.symvers *.order
