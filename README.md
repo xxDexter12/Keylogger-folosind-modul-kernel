@@ -34,3 +34,21 @@ Pentru o structură cât mai clară, am construit o structură denumită `KEYLOG
 
 # 5. Identificare de patternuri
 Implementarea identificării de patternuri pentru date sensibile precum parole, numere de card, etc.
+
+
+
+///////////////////////////////////////////////////////////////////////
+Workflow complet: De la /proc la procesare
+
+    Un proces scrie în /proc/keyboard_clipboard:
+        Kernel-ul apelează clipboard_write_procfs, deoarece este configurată ca handler (proc_write).
+
+    clipboard_write_procfs face următoarele:
+        Copiază datele din spațiul utilizatorului în buffer-ul clipboard-ului (clipboard_buffer).
+        Creează un job (struct clipboard_work) și îl inițializează cu funcția clipboard_write_work folosind INIT_WORK.
+        Programează lucrarea în workqueue folosind queue_work.
+
+    Workqueue-ul execută clipboard_write_work:
+        Procesează datele din clipboard_work.
+        Scrie datele în fișier cu write_to_file.
+        Eliberează memoria.
