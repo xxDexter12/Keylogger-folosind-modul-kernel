@@ -1,1 +1,0 @@
-savedcmd_/home/bogdan/Desktop/git/Keylogger-folosind-modul-kernel/keylogger.o := ld -m elf_x86_64 -z noexecstack   -r -o /home/bogdan/Desktop/git/Keylogger-folosind-modul-kernel/keylogger.o @/home/bogdan/Desktop/git/Keylogger-folosind-modul-kernel/keylogger.mod 

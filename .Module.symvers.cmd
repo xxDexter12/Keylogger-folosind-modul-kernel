@@ -1,1 +1,0 @@
-savedcmd_/home/bogdan/Desktop/git/Keylogger-folosind-modul-kernel/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/bogdan/Desktop/git/Keylogger-folosind-modul-kernel/Module.symvers -T /home/bogdan/Desktop/git/Keylogger-folosind-modul-kernel/modules.order -i Module.symvers -e 
