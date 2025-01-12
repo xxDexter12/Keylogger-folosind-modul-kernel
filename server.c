@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <sys/epoll.h>
 #include <pthread.h>
+#include <sys/errno.h>
 /*
 Cum funcționează:
 
