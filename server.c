@@ -52,6 +52,7 @@ typedef struct client
 {
     int client_fd;
     bool is_in_processing;//1 este 0 nu este
+    bool is_in_epoll;
     char message_queue[MAX_NUMBER_MESSAGES][MESSAGE_LENGTH];
     int messaje_count;
     pthread_mutex_t client_data_mutex;
@@ -82,11 +83,20 @@ int get_client_from_queue(queue* coada,int cl_fd)
 
 void add_message_in_client_queue(queue*q,int poz,char buff[MESSAGE_LENGTH])
 {
+    pthread_mutex_lock(&(q->mutex_queue_full));
     client client=q->clients[poz];
+    pthread_mutex_unlock(&(q->mutex_queue_full));
     pthread_mutex_lock(&(client.client_data_mutex));
     if(client.messaje_count>MAX_NUMBER_MESSAGES)
     {
         //Daca coada de mesaje e plina, modificam fd din epoll si ii scoatem epollin
+        struct epoll_event ev;
+        ev.events = 0; 
+        ev.data.fd = client.client_fd;
+        
+        if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client.client_fd, &ev) == -1) {
+            perror("epoll_ctl: EPOLL_CTL_MOD");
+        }
     }
     strcpy(client.message_queue[client.messaje_count],buff);
     client.message_queue[client.messaje_count][MAX_NUMBER_MESSAGES-1]='\0';
@@ -248,7 +258,7 @@ int main(){
                         perror("eroare la epoll_ctl la client\n");
                         exit(-1);
                     }
-                    //nu am inchis cu close client_fd
+                    
                 }
 
             }else
@@ -260,14 +270,14 @@ int main(){
                     epoll_ctl(epoll_fd,EPOLL_CTL_ADD,ret_events[i].data.fd,NULL);
                 }else
                 {
-                    int cl_fd = ret_events[i].data.fd;
+                    client_fd = ret_events[i].data.fd;
                     char buffer[MESSAGE_LENGTH];
-                    int bytes_read = recv(cl_fd, buffer, sizeof(buffer) - 1, 0);
+                    int bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
                     if (bytes_read <= 0) {
                         if (bytes_read == 0 || errno == ECONNRESET) {
-                            printf("Client %d s-a deconectat.\n", cl_fd);
-                            close(cl_fd);
-                            epoll_ctl(epoll_fd, EPOLL_CTL_DEL, cl_fd, NULL);
+                            printf("Client %d s-a deconectat.\n", client_fd);
+                            close(client_fd);
+                            epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
                         } else {
                             perror("Eroare la recv\n");
                         }
