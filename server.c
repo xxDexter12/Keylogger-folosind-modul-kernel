@@ -260,14 +260,14 @@ int main(){
                     epoll_ctl(epoll_fd,EPOLL_CTL_ADD,ret_events[i].data.fd,NULL);
                 }else
                 {
-                    client_fd = ret_events[i].data.fd;
+                    int cl_fd = ret_events[i].data.fd;
                     char buffer[MESSAGE_LENGTH];
-                    int bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+                    int bytes_read = recv(cl_fd, buffer, sizeof(buffer) - 1, 0);
                     if (bytes_read <= 0) {
                         if (bytes_read == 0 || errno == ECONNRESET) {
-                            printf("Client %d s-a deconectat.\n", client_fd);
-                            close(client_fd);
-                            epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
+                            printf("Client %d s-a deconectat.\n", cl_fd);
+                            close(cl_fd);
+                            epoll_ctl(epoll_fd, EPOLL_CTL_DEL, cl_fd, NULL);
                         } else {
                             perror("Eroare la recv\n");
                         }
