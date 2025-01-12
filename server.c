@@ -85,7 +85,7 @@ void add_message_in_client_queue(queue*q,int poz,char buff[MESSAGE_LENGTH])
     pthread_mutex_lock(&(client.client_data_mutex));
     if(client.messaje_count>MAX_NUMBER_MESSAGES)
     {
-        //nu stiu ce facem aici
+        //Daca coada de mesaje e plina, modificam fd din epoll si ii scoatem epollin
     }
     strcpy(client.message_queue[client.messaje_count],buff);
     client.message_queue[client.messaje_count][MAX_NUMBER_MESSAGES-1]='\0';
@@ -127,7 +127,6 @@ void enqueue(queue* coada, int client_fd)
 }
 void dequeue(queue* coada)
 {
-    // daca vrei o faci daca nu o fac eu
     pthread_mutex_lock(&(coada->mutex_queue_full));
     while(coada->actual_size_of_queue==0)
     {
@@ -149,7 +148,7 @@ int set_nonblocking(int fd)
 }
 void* process_client(void* params)
 {
-    //vedem cine o face pe asta
+   
     queue *q=(queue *)params;
 }
 
