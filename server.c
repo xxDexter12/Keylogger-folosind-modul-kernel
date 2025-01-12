@@ -71,37 +71,36 @@ typedef struct queue
 
 queue *coada;
 
-int get_client_from_queue(queue* coada,int cl_fd)
+client* get_client_from_queue(queue* coada,int cl_fd)
 {
     for(int i=coada->front;i<coada->actual_size_of_queue;i++)
     {
         if(coada->clients[i].client_fd==cl_fd)
-            return i;
+            return &coada->clients[i];
     }
-    return -1;
+    return NULL;
 }
 
-void add_message_in_client_queue(queue*q,int poz,char buff[MESSAGE_LENGTH])
+void add_message_in_client_queue(queue*q,client *c,char buff[MESSAGE_LENGTH])
 {
-    pthread_mutex_lock(&(q->mutex_queue_full));
-    client client=q->clients[poz];
-    pthread_mutex_unlock(&(q->mutex_queue_full));
-    pthread_mutex_lock(&(client.client_data_mutex));
-    if(client.messaje_count>MAX_NUMBER_MESSAGES)
+
+    pthread_mutex_lock(&c->client_data_mutex);
+    if(c->messaje_count>MAX_NUMBER_MESSAGES)
     {
         //Daca coada de mesaje e plina, modificam fd din epoll si ii scoatem epollin
         struct epoll_event ev;
         ev.events = 0; 
-        ev.data.fd = client.client_fd;
+        ev.data.fd = c->client_fd;
         
-        if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client.client_fd, &ev) == -1) {
+        if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, c->client_fd, &ev) == -1) {
             perror("epoll_ctl: EPOLL_CTL_MOD");
         }
+        c->is_in_epoll=0;
     }
-    strcpy(client.message_queue[client.messaje_count],buff);
-    client.message_queue[client.messaje_count][MAX_NUMBER_MESSAGES-1]='\0';
-    client.messaje_count++;
-    pthread_mutex_unlock(&(client.client_data_mutex));
+    strcpy(c->message_queue[c->messaje_count],buff);
+    c->message_queue[c->messaje_count][MESSAGE_LENGTH-1]='\0';
+    c->messaje_count++;
+    pthread_mutex_unlock(&(c->client_data_mutex));
 
 }
 
@@ -121,7 +120,7 @@ queue* create_queue(int capacity)
     return q;
 }
 
-void enqueue(queue* coada, int client_fd)
+void enqueue(queue* coada, client* client)
 {
     //to do ai grija sa l adaugi in coada doar daca nu e in coada(vei face o functie care cauta prin coada si verifica daca client_fd exista deja sau nu)
     // daca exista adaugi mesajul in coada de mesaje
@@ -130,7 +129,7 @@ void enqueue(queue* coada, int client_fd)
     {
         pthread_cond_wait(&(coada->queue_is_full),&(coada->mutex_queue_full));
     }
-    coada->clients[coada->actual_size_of_queue].client_fd=client_fd;
+    coada->clients[coada->actual_size_of_queue]=*client;
     coada->actual_size_of_queue++;
     coada->rear=(coada->rear+1)%coada->capacity;
     pthread_mutex_unlock(&(coada->mutex_queue_full));
@@ -263,10 +262,10 @@ int main(){
 
             }else
             {
-                int poz_client_in_queue=get_client_from_queue(coada,ret_events[i].data.fd);
-                if(poz_client_in_queue==-1)
+                client *c=get_client_from_queue(coada,ret_events[i].data.fd);
+                if(c==NULL)
                 {
-                    enqueue(coada,ret_events[i].data.fd);
+                    enqueue(coada,c);
                     epoll_ctl(epoll_fd,EPOLL_CTL_ADD,ret_events[i].data.fd,NULL);
                 }else
                 {
@@ -283,7 +282,7 @@ int main(){
                         }
                     }else
                     {
-                        add_message_in_client_queue(coada,poz_client_in_queue,buffer);
+                        add_message_in_client_queue(coada,c,buffer);
                     }    
                 }
             }
