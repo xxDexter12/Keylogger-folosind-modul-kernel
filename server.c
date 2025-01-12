@@ -51,8 +51,8 @@ pthread_t thread_id[NUMBER_OF_THREADS];
 typedef struct client
 {
     int client_fd;
-    bool is_in_processing;//1 este 0 nu este
-    bool is_in_epoll;
+    int is_in_processing;//1 este 0 nu este
+    int is_in_epoll;
     char message_queue[MAX_NUMBER_MESSAGES][MESSAGE_LENGTH];
     int messaje_count;
     pthread_mutex_t client_data_mutex;
@@ -135,17 +135,19 @@ void enqueue(queue* coada, client* client)
     pthread_mutex_unlock(&(coada->mutex_queue_full));
     pthread_cond_signal(&(coada->queue_is_empty));
 }
-void dequeue(queue* coada)
+client dequeue(queue* coada)
 {
     pthread_mutex_lock(&(coada->mutex_queue_full));
     while(coada->actual_size_of_queue==0)
     {
         pthread_cond_wait(&(coada->queue_is_empty),&(coada->mutex_queue_full));
     }
+    client c=coada->clients[coada->front];
     coada->actual_size_of_queue--;
     coada->front=(coada->front+1)%coada->capacity;
     pthread_mutex_unlock(&(coada->mutex_queue_full));
     pthread_cond_signal(&(coada->queue_is_full));
+    return c;
 }
 
 int set_nonblocking(int fd)
@@ -156,10 +158,38 @@ int set_nonblocking(int fd)
     // to do setare fd flag sa nu se blocheze
     return fcntl(fd,F_SETFL,O_NONBLOCK|flags);
 }
+
+
 void* process_client(void* params)
 {
    
     queue *q=(queue *)params;
+    pthread_mutex_lock(&q->mutex_queue_empty);
+        while(q->capacity==0)
+            pthread_cond_wait(&q->queue_is_empty,&q->mutex_queue_empty);
+
+    client c=dequeue(q);
+pthread_mutex_unlock(&q->mutex_queue_empty);
+
+pthread_mutex_lock(&c.client_data_mutex);
+    for(int i=0;i<c.messaje_count;i++)
+    {
+        //procesare c.message_queue[i];
+
+        if(c.is_in_epoll==0)
+        {
+            struct epoll_event epll;
+            epll.data.fd=c.client_fd;
+            epll.events=EPOLLIN;
+            rc=epoll_ctl(epoll_fd,EPOLL_CTL_ADD,c.client_fd,&epll);
+            if(rc<0)
+                    {
+                        perror("eroare la epoll_ctl in thread\n");
+                    }
+        }
+    }
+pthread_mutex_unlock(&c.client_data_mutex);
+    
 }
 
 int main(){
@@ -241,7 +271,8 @@ int main(){
                 //to do: acceptare TOTI clientii si adaugarea lor in epoll
                 while(1)
                 {
-                    client_fd=accept(server_socket,(struct sockaddr*)(&client_addr),sizeof(client_addr));
+                    int size=sizeof(client_addr);
+                    client_fd=accept(server_socket,(struct sockaddr*)(&client_addr),&size);
                     if (client_fd < 0) {
                         if (errno == EAGAIN || errno == EWOULDBLOCK) {
                             break;
@@ -266,7 +297,7 @@ int main(){
                 if(c==NULL)
                 {
                     enqueue(coada,c);
-                    epoll_ctl(epoll_fd,EPOLL_CTL_ADD,ret_events[i].data.fd,NULL);
+                    c->is_in_epoll=1;
                 }else
                 {
                     client_fd = ret_events[i].data.fd;
