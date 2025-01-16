@@ -37,8 +37,6 @@ Cum funcționează:
     Previne atribuirea aceluiași client altui thread în timp ce primul îl procesează.
     Si ajuta al blocarea threadurilor variabila de cond
 
-
- !!!!!! cleanup, rezolvare deconectare client
 */
 
 #define NUMBER_OF_CLIENTS 20
@@ -84,7 +82,6 @@ client* get_client_from_queue(queue* coada, int cl_fd)
     pthread_mutex_lock(&(coada->mutex_queue_full));
     client* result = NULL;
     
-    // Search from front to actual size, not just using front
     int curent = coada->front;
     int count = 0;
     
@@ -132,7 +129,6 @@ void add_message_in_client_queue(queue* q, client* c, char buff[MESSAGE_LENGTH])
 
 queue* create_queue(int capacity)
 {
-    //to do capacity e number_of_clients
     queue *q=(queue*)malloc(sizeof(queue));
     q->capacity=capacity;
     q->actual_size_of_queue=q->front=q->rear=0;
@@ -193,7 +189,6 @@ int set_nonblocking(int fd)
     int flags=fcntl(fd,F_GETFL,0);
     if(flags==-1)
         return -1;  
-    // to do setare fd flag sa nu se blocheze
     return fcntl(fd,F_SETFL,O_NONBLOCK|flags);
 }
 
@@ -220,14 +215,22 @@ void* process_client(void* params)
             continue;
         }
 
-        for(int i = 0; i < c->messaje_count; i++)
-        {
+         for(int i = 0; i < c->messaje_count; i++) {
             char temp_message[MESSAGE_LENGTH + 1];
-            snprintf(temp_message, sizeof(temp_message), "%s\n", c->message_queue[i]);
+            const char* message = c->message_queue[i];
+            
+            const char* command_start = strchr(message, ' ');
+            if (command_start != NULL) {
+                command_start++;
+                snprintf(temp_message, sizeof(temp_message), "%s\n", command_start);
+            } else {
+                snprintf(temp_message, sizeof(temp_message), "%s\n", message);
+            }
+            
             write(fd, temp_message, strlen(temp_message));
-            printf("%s\n",c->message_queue[i]);
-            if(c->is_in_epoll == 0)
-            {
+            printf("%s\n", command_start ? command_start : message);
+
+            if(c->is_in_epoll == 0) {
                 struct epoll_event epll;
                 epll.data.fd = c->client_fd;
                 epll.events = EPOLLIN;
@@ -322,7 +325,7 @@ int main(){
     memset(&server_addr,0,sizeof(server_addr));
     server_addr.sin_family=AF_INET;
     server_addr.sin_port=htons(12345);
-    //to do: setare adresa ip server
+    
     rc=inet_pton(AF_INET,"127.0.0.1",&(server_addr.sin_addr));
     if(rc<0)
     {
@@ -338,7 +341,6 @@ int main(){
         exit(-1);
     }
 
-    //to do:urmatoarea etapa server tcp
     rc=listen(server_socket,NUMBER_OF_CLIENTS);
     if(rc<0)
     {
@@ -368,7 +370,6 @@ int main(){
         exit(-1);
     }
 
-    //to do: adaugarea server socket in epoll
     epoll_ev.data.fd=server_socket;
     epoll_ev.events=EPOLLIN;
     rc=epoll_ctl(epoll_fd,EPOLL_CTL_ADD,server_socket,&epoll_ev);
@@ -378,7 +379,6 @@ int main(){
         exit(-1);
     }
 
-    //setare signalfd
     
     if(signal_fd==-1)
     {
@@ -403,7 +403,7 @@ int main(){
         {
             if(ret_events[i].data.fd==server_socket)
             {
-                //to do: acceptare TOTI clientii si adaugarea lor in epoll
+                
                 while(1)
                 {
                     unsigned int size=sizeof(client_addr);
@@ -428,8 +428,7 @@ int main(){
 
             }else if(ret_events[i].data.fd==signal_fd)
             {
-                //aici se apeleaza functiile de cleanup
-                printf("s-a primit signalfd\n");
+             
                  struct signalfd_siginfo fdsi;
                  ssize_t bytes_read=read(signal_fd,&fdsi,sizeof(fdsi));
                  if(bytes_read<0)
