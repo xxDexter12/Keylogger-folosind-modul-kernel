@@ -14,6 +14,10 @@ size_t keycode_to_string(int keycode,int shift_pressed,char*buffer,size_t buff_l
             } else {
                 key = keymap[keycode][0];
             }
+            if (!key || strlen(key) == 0) {
+                pr_err("Keycode %d nu are mapare validă\n", keycode);
+                return 0;
+            }
             snprintf(buffer,buff_len,key);
             return strlen(buffer);
     }

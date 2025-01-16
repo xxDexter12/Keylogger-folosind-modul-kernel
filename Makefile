@@ -15,6 +15,6 @@ module:
 clean:
 	rm -f *.o *.ko *.mod *.cmd .*.cmd *.symvers *.markers keylogger.mod.c modules.order *.o.*
 	sudo rm -f /tmp/keyboard_log
-	sudo rm -f /tmp/clipboard_log.txt
+	sudo rm -f /tmp/client*
 
 .PHONY: all clean module 

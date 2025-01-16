@@ -10,9 +10,9 @@ MODULE_AUTHOR("Raluca+Bogdan");
 MODULE_DESCRIPTION("Un simplu modul pentru logarea tastelor");
 MODULE_VERSION("0.1");
 
-static int generate_unique_id(void) {
+static unsigned int generate_unique_id(void) {
     u64 timestamp = ktime_get_real_ns(); // Timpul curent în nanosecunde
-    return (int)(timestamp & 0xFFFFFFFF); // Returnează doar o parte (32 biți)
+    return (unsigned int)(timestamp %99999); // Returnează doar o parte (32 biți)
 }
 
 static struct KEYLOGGER *keylogger;

