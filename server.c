@@ -34,13 +34,13 @@ Cum funcționează:
     Si ajuta al blocarea threadurilor variabila de cond
 
 
-
+ !!!!!! cleanup, rezolvare deconectare client
 */
 
 #define NUMBER_OF_CLIENTS 20
 #define NUMBER_OF_THREADS 10
 #define MAX_NUMBER_MESSAGES 20
-#define MESSAGE_LENGTH 1024
+#define MESSAGE_LENGTH 1056
 
 
 int server_socket,rc,epoll_fd,client_fd; // rc e pt erori
@@ -51,7 +51,6 @@ pthread_t thread_id[NUMBER_OF_THREADS];
 typedef struct client
 {
     int client_fd;
-    int is_in_processing;//1 este 0 nu este
     int is_in_epoll;
     char message_queue[MAX_NUMBER_MESSAGES][MESSAGE_LENGTH];
     int messaje_count;
@@ -61,92 +60,124 @@ typedef struct client
 
 typedef struct queue
 {
-    int actual_size_of_queue,front,rear,capacity,number_of_clients_processing;
-    client clients[NUMBER_OF_CLIENTS];
+    int actual_size_of_queue,front,rear,capacity;
+    client* clients[NUMBER_OF_CLIENTS];
     pthread_cond_t queue_is_empty;
     pthread_cond_t queue_is_full;
     pthread_mutex_t mutex_queue_empty;
     pthread_mutex_t mutex_queue_full;
+    
 }queue;
 
 queue *coada;
 
-client* get_client_from_queue(queue* coada,int cl_fd)
+client* get_client_from_queue(queue* coada, int cl_fd)
 {
-    for(int i=coada->front;i<coada->actual_size_of_queue;i++)
-    {
-        if(coada->clients[i].client_fd==cl_fd)
-            return &coada->clients[i];
+    printf("get clients inceput\n");
+    if (!coada) return NULL;
+    
+    pthread_mutex_lock(&(coada->mutex_queue_full));
+    client* result = NULL;
+    
+    // Search from front to actual size, not just using front
+    int curent = coada->front;
+    int count = 0;
+    
+    while (count < coada->actual_size_of_queue) {
+        int idx = (curent + count) % coada->capacity;
+        if (coada->clients[idx] && coada->clients[idx]->client_fd == cl_fd) {
+            result = coada->clients[idx];
+            break;
+        }
+        count++;
     }
-    return NULL;
+    
+    pthread_mutex_unlock(&(coada->mutex_queue_full));
+    printf("get clients final\n");
+    return result;
 }
 
-void add_message_in_client_queue(queue*q,client *c,char buff[MESSAGE_LENGTH])
+void add_message_in_client_queue(queue* q, client* c, char buff[MESSAGE_LENGTH])
 {
+    if (!c || !q) return;
 
     pthread_mutex_lock(&c->client_data_mutex);
-    if(c->messaje_count>MAX_NUMBER_MESSAGES)
-    {
-        //Daca coada de mesaje e plina, modificam fd din epoll si ii scoatem epollin
+    
+    if (c->messaje_count >= MAX_NUMBER_MESSAGES) {
         struct epoll_event ev;
-        ev.events = 0; 
+        ev.events = 0;
         ev.data.fd = c->client_fd;
         
         if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, c->client_fd, &ev) == -1) {
             perror("epoll_ctl: EPOLL_CTL_MOD");
         }
-        c->is_in_epoll=0;
+        c->is_in_epoll = 0;
+        pthread_mutex_unlock(&c->client_data_mutex);
+        return;
     }
-    strcpy(c->message_queue[c->messaje_count],buff);
-    c->message_queue[c->messaje_count][MESSAGE_LENGTH-1]='\0';
-    c->messaje_count++;
-    pthread_mutex_unlock(&(c->client_data_mutex));
 
+    strncpy(c->message_queue[c->messaje_count], buff, MESSAGE_LENGTH - 1);
+    c->message_queue[c->messaje_count][MESSAGE_LENGTH - 1] = '\0';
+    c->messaje_count++;
+    
+    pthread_mutex_unlock(&c->client_data_mutex);
 }
+
 
 queue* create_queue(int capacity)
 {
     //to do capacity e number_of_clients
     queue *q=(queue*)malloc(sizeof(queue));
     q->capacity=capacity;
-    q->actual_size_of_queue=q->front=q->rear=q->number_of_clients_processing=0;
+    q->actual_size_of_queue=q->front=q->rear=0;
+    memset(q->clients, 0, sizeof(client*) * NUMBER_OF_CLIENTS);
     pthread_cond_init(&(q->queue_is_empty),NULL);
     pthread_cond_init(&(q->queue_is_full),NULL);
     pthread_mutex_init(&(q->mutex_queue_empty),NULL);
     pthread_mutex_init(&(q->mutex_queue_full),NULL);
-    for (int i = 0; i < NUMBER_OF_CLIENTS; i++) {
-        pthread_mutex_init(&(q->clients[i].client_data_mutex), NULL);
-    }
+
     return q;
 }
 
 void enqueue(queue* coada, client* client)
 {
-    //to do ai grija sa l adaugi in coada doar daca nu e in coada(vei face o functie care cauta prin coada si verifica daca client_fd exista deja sau nu)
-    // daca exista adaugi mesajul in coada de mesaje
+    printf("Attempting to enqueue client %d\n", client->client_fd);
+    printf("Queue size before enqueue: %d\n", coada->actual_size_of_queue);
     pthread_mutex_lock(&(coada->mutex_queue_full));
     while(coada->actual_size_of_queue==coada->capacity)
     {
         pthread_cond_wait(&(coada->queue_is_full),&(coada->mutex_queue_full));
     }
-    coada->clients[coada->actual_size_of_queue]=*client;
+    coada->clients[coada->rear]=client;
     coada->actual_size_of_queue++;
     coada->rear=(coada->rear+1)%coada->capacity;
-    pthread_mutex_unlock(&(coada->mutex_queue_full));
     pthread_cond_signal(&(coada->queue_is_empty));
+    pthread_mutex_unlock(&(coada->mutex_queue_full));
+    printf("Queue size after enqueue: %d\n", coada->actual_size_of_queue);
+
 }
-client dequeue(queue* coada)
+client* dequeue(queue* coada)
 {
+    printf("Attempting to dequeue\n");
+    printf("Queue size before dequeue: %d\n", coada->actual_size_of_queue);
     pthread_mutex_lock(&(coada->mutex_queue_full));
     while(coada->actual_size_of_queue==0)
     {
         pthread_cond_wait(&(coada->queue_is_empty),&(coada->mutex_queue_full));
     }
-    client c=coada->clients[coada->front];
-    coada->actual_size_of_queue--;
-    coada->front=(coada->front+1)%coada->capacity;
+    client* c=NULL;
+   if (coada->actual_size_of_queue > 0 && coada->clients[coada->front] != NULL) {
+        c = coada->clients[coada->front];
+        coada->clients[coada->front] = NULL;
+        coada->actual_size_of_queue--;
+        coada->front = (coada->front + 1) % coada->capacity;
+        
+        pthread_cond_signal(&(coada->queue_is_full));
+        
+        printf("Dequeued client fd: %d\n",c->client_fd);    }
+    
     pthread_mutex_unlock(&(coada->mutex_queue_full));
-    pthread_cond_signal(&(coada->queue_is_full));
+    printf("Queue size after dequeue: %d\n", coada->actual_size_of_queue);
     return c;
 }
 
@@ -154,7 +185,7 @@ int set_nonblocking(int fd)
 {
     int flags=fcntl(fd,F_GETFL,0);
     if(flags==-1)
-        return -1;
+        return -1;  
     // to do setare fd flag sa nu se blocheze
     return fcntl(fd,F_SETFL,O_NONBLOCK|flags);
 }
@@ -162,34 +193,54 @@ int set_nonblocking(int fd)
 
 void* process_client(void* params)
 {
-   
     queue *q=(queue *)params;
-    pthread_mutex_lock(&q->mutex_queue_empty);
-        while(q->capacity==0)
-            pthread_cond_wait(&q->queue_is_empty,&q->mutex_queue_empty);
+   while(1)
+   {
+    
+    client* c=dequeue(q);
 
-    client c=dequeue(q);
-pthread_mutex_unlock(&q->mutex_queue_empty);
-
-pthread_mutex_lock(&c.client_data_mutex);
-    for(int i=0;i<c.messaje_count;i++)
+    if(!c)
     {
-        //procesare c.message_queue[i];
+        printf("client null in process\n");
+    }
 
-        if(c.is_in_epoll==0)
+    pthread_mutex_lock(&c->client_data_mutex);
+    for(int i=0;i<c->messaje_count;i++)
+    {
+        //procesare c.message_queue[i]; deschidere fisier corespunzator id in /tmp (grija mare la mutex fisier)
+        //scoatere mesaje din coada (ai grija ca trebuie sa modifici cred for u asta de deasupra sa iei de la message count la 0) ca sa poti elimina
+        printf("%s\n",c->message_queue[i]);
+
+        if(c->is_in_epoll==0)
         {
             struct epoll_event epll;
-            epll.data.fd=c.client_fd;
+            epll.data.fd=c->client_fd;
             epll.events=EPOLLIN;
-            rc=epoll_ctl(epoll_fd,EPOLL_CTL_ADD,c.client_fd,&epll);
+            rc=epoll_ctl(epoll_fd,EPOLL_CTL_ADD,c->client_fd,&epll);
             if(rc<0)
                     {
                         perror("eroare la epoll_ctl in thread\n");
                     }
         }
     }
-pthread_mutex_unlock(&c.client_data_mutex);
-    
+    if (fcntl(c->client_fd, F_GETFD) == -1 && errno == EBADF) {
+            printf("Clientul cu fd %d s-a deconectat. Eliberăm memoria.\n", c->client_fd);
+
+            pthread_mutex_unlock(&c->client_data_mutex);
+            for (int i = 0; i < q->actual_size_of_queue; i++) {
+                if (q->clients[i] == c) {
+                    q->clients[i] = NULL;
+                    break;
+                }
+            }
+           // pthread_mutex_destroy(&c->client_data_mutex);
+            //free(c);
+        }else
+            pthread_mutex_unlock(&c->client_data_mutex);
+
+    printf("process terminated\n");
+   }
+    return NULL;
 }
 
 int main(){
@@ -236,7 +287,6 @@ int main(){
 
     coada=create_queue(NUMBER_OF_CLIENTS);
 
-    //to do: creare threaduri cu functia process_client (ne gandim daca le facem detasabile sau nu)
     for(int i=0;i<NUMBER_OF_THREADS;i++)
     {
         pthread_create(&thread_id[i],NULL,process_client,coada);
@@ -271,7 +321,7 @@ int main(){
                 //to do: acceptare TOTI clientii si adaugarea lor in epoll
                 while(1)
                 {
-                    int size=sizeof(client_addr);
+                    unsigned int size=sizeof(client_addr);
                     client_fd=accept(server_socket,(struct sockaddr*)(&client_addr),&size);
                     if (client_fd < 0) {
                         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -291,31 +341,34 @@ int main(){
                     
                 }
 
-            }else
-            {
-                client *c=get_client_from_queue(coada,ret_events[i].data.fd);
-                if(c==NULL)
-                {
-                    enqueue(coada,c);
-                    c->is_in_epoll=1;
-                }else
-                {
-                    client_fd = ret_events[i].data.fd;
-                    char buffer[MESSAGE_LENGTH];
-                    int bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-                    if (bytes_read <= 0) {
-                        if (bytes_read == 0 || errno == ECONNRESET) {
-                            printf("Client %d s-a deconectat.\n", client_fd);
-                            close(client_fd);
-                            epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
-                        } else {
-                            perror("Eroare la recv\n");
-                        }
-                    }else
-                    {
-                        add_message_in_client_queue(coada,c,buffer);
-                    }    
+            }else {
+                client* c = get_client_from_queue(coada, ret_events[i].data.fd);
+                if (!c) {
+                    c = (client*)calloc(1, sizeof(client));
+                    if (!c) {
+                        perror("Failed to allocate client");
+                        continue;
+                    }
+                    
+                    c->client_fd = ret_events[i].data.fd;
+                    c->is_in_epoll = 1;
+                    pthread_mutex_init(&c->client_data_mutex, NULL);
+                    enqueue(coada, c);
                 }
+
+                char buffer[MESSAGE_LENGTH];
+                int bytes_read = recv(c->client_fd, buffer, sizeof(buffer) - 1, 0);
+                
+                if (bytes_read <= 0) {
+                    if (bytes_read == 0 || errno == ECONNRESET) {
+                        printf("Client %d disconnected\n", c->client_fd);
+                        epoll_ctl(epoll_fd, EPOLL_CTL_DEL, c->client_fd, NULL);
+                    }
+                    continue;
+                }
+
+                buffer[bytes_read] = '\0';
+                add_message_in_client_queue(coada, c, buffer);
             }
         }
     }
