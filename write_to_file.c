@@ -18,7 +18,6 @@ void write_to_file(struct work_struct* work) {
     struct kvec vec;
     int sent_bytes;
 
-    pr_info("temp_buffer %s\n",temp_buffer);
     vec.iov_base = temp_buffer;
     vec.iov_len = len + BUFF_SIZE;
 

